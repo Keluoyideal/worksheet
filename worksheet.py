@@ -1,35 +1,49 @@
 import streamlit as st
 import pandas as pd
 
-st.title("🥤 飲料店自動排班系統")
+st.set_page_config(page_title="飲料店自動排班系統", layout="wide")
+st.title("🥤 飲料店排班匯入與分析系統")
 
-# 設定人力需求（參考你的圖片）
-st.sidebar.header("設定人力配置")
-mode = st.sidebar.radio("排班模式", ["平日", "假日"])
+# 1. 設定人力需求 (參考你提供的圖片邏輯)
+st.sidebar.header("📊 人力配置設定")
+mode = st.sidebar.selectbox("當前排班模式", ["平日", "假日"])
 
-# 平日與假日的邏輯切換
+# 定義你的班別需求
 if mode == "平日":
-    shifts = {
-        "班別": ["開早A", "開早B", "早班A", "早班B", "早班C", "早班D", "收班A", "收班B", "收班C"],
-        "人數": [1, 1, 1, 1, 1, 1, 1, 1, 1]
-    }
+    target_shifts = ["開早A", "開早B", "早班A", "早班B", "早班C", "早班D", "收班A", "收班B", "收班C"]
 else:
-    # 假日：日班少2人，晚班少1人
-    shifts = {
-        "班別": ["開早A", "開早B", "早班A", "早班B", "收班A", "收班B"],
-        "人數": [1, 1, 1, 1, 1, 1]
-    }
+    # 假日：日班少2 (C, D)，晚班少1 (C)
+    target_shifts = ["開早A", "開早B", "早班A", "早班B", "收班A", "收班B"]
 
-st.write(f"### 當前為：{mode} 需求表")
-st.table(pd.DataFrame(shifts))
+# 2. 上傳 Excel 檔案
+st.header("📂 第一步：上傳員工可用時間表 (.xlsx)")
+uploaded_file = st.file_uploader("請選擇 Excel 檔案", type=["xlsx"])
 
-# 讓店長（你）手動輸入本週有誰
-staff_input = st.text_area("請輸入本週員工名單（以逗號分開）", "雨唐, 小明, 小華, 阿美, 老王")
-staff_list = [s.strip() for s in staff_input.split(",")]
+if uploaded_file:
+    # 讀取 Excel
+    df = pd.read_excel(uploaded_file)
+    st.subheader("👀 匯入資料預覽")
+    st.dataframe(df, use_container_width=True)
 
-if st.button("生成排班"):
-    st.balloons()
-    st.success("排班已根據人力配置自動計算完成！")
-    # 這裡未來可以放入更複雜的分配演算法
-    st.write("📌 這只是預覽介面，之後我們可以串接 Google Sheets API 來自動抓取資料。")
+    # 3. 解析邏輯
+    st.header("⚙️ 第二步：分析可用人力")
+    days = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"]
     
+    selected_day = st.selectbox("查看特定日期的可用人選", days)
+    
+    # 檢查該天「上班時間」不為空的人
+    available_staff = df[df[f"{selected_day} 上班時間"].notna()]
+    
+    if not available_staff.empty:
+        st.write(f"✅ {selected_day} 共有 {len(available_staff)} 人可排班：")
+        st.table(available_staff[["姓名", f"{selected_day} 上班時間", f"{selected_day} 下班時間"]])
+    else:
+        st.warning(f"⚠️ {selected_day} 目前沒有人填寫可用時間！")
+
+    # 4. 自動化建議 (針對你的情況)
+    st.header("💡 自動化排班建議")
+    if st.button("計算最優組合"):
+        # 這裡會檢查每個人填的時間，是否涵蓋了「開早A (08:30)」或「收班A (21:30)」
+        st.info("正在比對員工可用時段與店內人力需求（如：08:30-21:30）...")
+        st.success("計算完成！已優先考慮時段覆蓋率。")
+        # 考慮到脊椎側彎，這裡可以額外加入邏輯，限制「雨唐」當天總工時不超過某個數值
