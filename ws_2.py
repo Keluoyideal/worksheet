@@ -37,8 +37,8 @@ def calc_net_hours(shift):
     except: return 0
 
 # --- 3. 初始排班演算與初始化 ---
-st.title("🥤 專業排班系統：人力覆蓋精準分析")
-uploaded_file = st.file_uploader("請上傳同仁回覆 CSV", type="csv")
+st.title("青山南京三民排班系統")
+uploaded_file = st.file_uploader("請上傳同仁回覆.CSV檔", type="csv")
 
 if uploaded_file:
     orig_df = pd.read_csv(uploaded_file, encoding='utf-8-sig')
